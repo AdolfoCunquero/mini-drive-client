@@ -58,6 +58,7 @@
                                                 :prepend-inner-icon="icons.mdiLock"
                                                 solo
                                                 v-model="loginData.password"
+                                                @keyup.enter="validateLogin"
                                             ></v-text-field>     
                                         </v-form>
 

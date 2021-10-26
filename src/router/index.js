@@ -6,7 +6,7 @@ import Main from '../components/Main.vue'
 Vue.use(VueRouter)
 
 const routes = [
-  { path: '/login', component: Login },
+  { path: '/', component: Login },
   { path: '/workspace', component: Main }
 ]
 

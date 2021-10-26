@@ -334,6 +334,44 @@
           </v-card>
       </v-dialog>
 
+
+
+      <v-dialog
+          v-model="dialogDeleteFile"
+          max-width="500px"
+        >
+          <v-card>
+            <v-card-title>
+              ¿Desea eliminar este archivo/carpeta?
+            </v-card-title>
+            <v-card-text>
+            </v-card-text>
+            <v-card-actions>
+            
+              <v-btn
+                :loading="waitingResponseDeleteFile"
+                :disabled="waitingResponseDeleteFile"
+                color="error"
+                depressed
+                @click="confirmDeleteDirectory"
+              >
+                Eliminar
+                <template v-slot:loader>
+                <span>Eliminando</span>
+                </template>
+              </v-btn>
+
+              <v-btn
+                depressed
+                @click="dialogDeleteFile = false"
+                :disabled="waitingResponseDeleteFile"
+              >
+                Cancelar
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+      </v-dialog>
+
       <v-snackbar
         right
         v-model="snackbar"
@@ -411,10 +449,12 @@ export default {
           
         }
       },
+      waitingResponseDeleteFile:false,
       waitingResponseUploadingFiles:false,
       waitingResponseRenameDir:false,
       dialogUploadFile: false,
       dialogRenameDirectory:false,
+      dialogDeleteFile:false,
       snackbar: false,
       textSnackbar: "",
       newFolderName:"",
@@ -435,6 +475,7 @@ export default {
         mdiDotsHorizontal,mdiCached , mdiDelete , mdiFileOutline  
       },
       files: [],
+      selectedDirectoryToDelete:{},
       itemsBreadcrum: [
         {
           text: 'Home',
@@ -446,8 +487,8 @@ export default {
       selectedDirectory:{},
       user: {
         shortName: '',
-        fullName: 'Adolfo Cunquero',
-        email: 'adolfocunquero@gmail.com',
+        fullName: '',
+        email: '',
       },
     }
   },
@@ -484,15 +525,26 @@ export default {
       })
     },
     deleteDirectory: function(file){
+      this.selectedDirectoryToDelete = file;
+      this.dialogDeleteFile = true;
+    },
+    confirmDeleteDirectory: function(){
       let $this = this;
+      let file = this.selectedDirectoryToDelete;
+      this.waitingResponseDeleteFile = true;
       axios.delete("directory/delete/"+file.id).then(function(){
         $this.refreshCurrentDirectory();
         $this.snackbar = true;
         $this.textSnackbar = "Item eliminado correctamente";
+        $this.selectedDirectoryToDelete = {};
+        $this.waitingResponseDeleteFile = false;
+        $this.dialogDeleteFile = false;
       }).catch(function(err){
         console.log(err);
         $this.snackbar = true;
         $this.textSnackbar = err.response.data.message;
+        $this.waitingResponseDeleteFile = false;
+        $this.dialogDeleteFile = false;
       })
     },
     downloadFile: function(file){
@@ -616,7 +668,7 @@ export default {
     },
     logout:function(){
       this.$session.destroy();
-      this.$router.push("/login");
+      this.$router.push("/");
     }
   },
   created: function() {
@@ -628,6 +680,12 @@ export default {
     }
 
     this.user = this.$session.get("user");
+    let token = this.$session.get("token");
+
+    axios.defaults.headers = {
+        "Authorization":"Bearer"+token
+    }
+
     axios.get("directory/list").then(function(response){
       let data = response.data;
       for(let i =0; i < data.length; i++){

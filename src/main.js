@@ -16,7 +16,8 @@ var options = {
 
 Vue.use(VueSession, options)
 
-axios.defaults.baseURL = "http://localhost:3500/"
+axios.defaults.baseURL = "https://aqueous-brushlands-17278.herokuapp.com/"
+//axios.defaults.baseURL = "http://localhost:3500/"
 
 // axios.defaults.headers = {
 //   "Authorization":"Bearer"
