@@ -35,18 +35,31 @@
               >
                 <span class="white--text text-h5">{{ user.shortName }}</span>
               </v-avatar>
-              <h3>{{ user.fullName }}</h3>
+              <h3 class="mt-2">{{ user.firstName }} {{ user.lastName }}</h3>
               <p class="text-caption mt-1">
                 {{ user.email }}
               </p>
               <v-divider class="my-3"></v-divider>
-              <v-btn
+              <!-- <v-btn
                 depressed
                 rounded
                 text
               >
                 Edit Account
-              </v-btn>
+              </v-btn> -->
+
+              <v-progress-circular
+                :rotate="-90"
+                :size="100"
+                :width="15"
+                :value="user.percetUsed"
+                color="primary"
+              >
+                {{ user.percetUsed | formatUsed}}
+              </v-progress-circular>
+              <br/>
+              <span>Espacio usado</span>   
+
               <v-divider class="my-3"></v-divider>
               <v-btn
                 depressed
@@ -126,7 +139,7 @@
                   <v-list-item-content>
                     <v-list-item-title class="text-left" v-text="file.name"></v-list-item-title>
 
-                    <v-list-item-subtitle type="date" class="text-left" >{{file.created | formatDate}}</v-list-item-subtitle>
+                    <v-list-item-subtitle type="date" class="text-left" >{{file.fileSize | formatSize}} {{file.created | formatDate}}</v-list-item-subtitle>
                   </v-list-item-content>
 
                   <v-list-item-action>
@@ -429,6 +442,18 @@ Vue.filter('formatDate', function(value) {
   }
 });
 
+Vue.filter('formatSize', function(value) {
+  if (value) {
+    return Math.round(value, 2) + " KB";  
+  }
+});
+
+Vue.filter('formatUsed', function(value) {
+  if (value) {
+    return Math.round(value, 2) + " %";  
+  }
+});
+
 const FilePond = vueFilePond(
   FilePondPluginFileMetadata,
   FilePondPluginFileValidateType,
@@ -504,8 +529,12 @@ export default {
       selectedDirectory:{},
       user: {
         shortName: '',
-        fullName: '',
+        firstName: '',
+        lastName:"",
         email: '',
+        totalSpaceKb: 0,
+        usedSpaceKb:0,
+        percetUsed:0
       },
     }
   },

@@ -218,7 +218,7 @@ export default {
                     axios.defaults.headers = {
                         "Authorization":"Bearer"+data.token
                     }
-
+                    data.userInfo.percetUsed = data.userInfo.usedSpaceKb  / data.userInfo.totalSpaceKb;
                     $this.$session.start();
                     $this.$session.set('token', data.token);
                     $this.$session.set('user', data.userInfo);
