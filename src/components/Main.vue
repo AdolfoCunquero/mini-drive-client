@@ -74,13 +74,13 @@
         </v-btn>
 
         <v-btn value="uploadFile" @click="openDialogUploadFile">
-          <span>Upload File</span>
+          <span>Cargar Archivo</span>
 
           <v-icon>{{icons.mdiFileUpload }}</v-icon>
         </v-btn>
 
         <v-btn value="refresh" @click="refreshCurrentDirectory">
-          <span>Refresh</span>
+          <span>Actualizar</span>
 
           <v-icon>{{icons.mdiRefresh  }}</v-icon>
         </v-btn>
@@ -126,7 +126,7 @@
                   <v-list-item-content>
                     <v-list-item-title class="text-left" v-text="file.name"></v-list-item-title>
 
-                    <v-list-item-subtitle class="text-left" v-text="file.created"></v-list-item-subtitle>
+                    <v-list-item-subtitle type="date" class="text-left" >{{file.created | formatDate}}</v-list-item-subtitle>
                   </v-list-item-content>
 
                   <v-list-item-action>
@@ -216,8 +216,12 @@
                   :allowRevert="false"
                   :checkValidity="true"
                   :beforeAddFile="validateNewFile"
+                  allowImagePreview="false"
+                  maxParallelUploads="1"
+                  allowFileSizeValidation="true"
                   ref="pond"
-                  label-idle="Drop files here or <span class='filepond--label-action'>Browse</span>"
+                  maxFileSize="30MB"
+                  label-idle="Suelta los archivos aquí o <span class='filepond--label-action'>Navegar</span>"
                   v-bind:allow-multiple="true"
                   v-bind:files="myFiles"
                   v-bind:server="myServer"
@@ -294,6 +298,7 @@
                 label="Nombre*"
                 required
                 v-model="newFolderName"
+                @keyup.enter="createFolder"
               ></v-text-field>
 
               <v-alert
@@ -404,6 +409,7 @@ import {
 
 } from '@mdi/js'
 import axios from 'axios'
+import Vue from 'vue'
 
 import vueFilePond from "vue-filepond";
 
@@ -413,11 +419,21 @@ import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css
 import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import FilePondPluginFileMetadata from "filepond-plugin-file-metadata";
+import FilePondPluginFileValidateSize from 'filepond-plugin-file-validate-size';
+
+import moment from 'moment'
+
+Vue.filter('formatDate', function(value) {
+  if (value) {
+    return moment(String(value)).format('MM/DD/YYYY hh:mm')
+  }
+});
 
 const FilePond = vueFilePond(
   FilePondPluginFileMetadata,
   FilePondPluginFileValidateType,
-  FilePondPluginImagePreview
+  FilePondPluginImagePreview,
+  FilePondPluginFileValidateSize
 );
 
 export default {
@@ -434,6 +450,7 @@ export default {
           let formData = new FormData();
           formData.append('file', file, file.name);
           formData.append('parentId',$this.currentParentId);
+          formData.append('logicalPath',$this.getLogicalPath());
           formData.append('level',0); 
           formData.append('icon','mdi-file'); 
           formData.append('type','FILE'); 
@@ -620,7 +637,8 @@ export default {
         "level":0,
         "icon":"mdi-folder",
         "type":"FOLDER",
-        "parentId":$this.currentParentId
+        "parentId":$this.currentParentId,
+        "logicalPath":this.getLogicalPath()
       }).then(function(){
         $this.refreshCurrentDirectory();
         $this.waitingResponseNewFolder = false;
@@ -666,6 +684,13 @@ export default {
         })
       }
     },
+    getLogicalPath: function(){
+      let logicalPath = "";
+      for(let i=0;i< this.itemsBreadcrum.length;i++){
+        logicalPath += this.itemsBreadcrum[i].id + "/"
+      }
+      return logicalPath;
+    },
     logout:function(){
       this.$session.destroy();
       this.$router.push("/");
@@ -693,6 +718,14 @@ export default {
       }
       $this.files = data;
     })
+  },
+  watch: {
+      $route: {
+          immediate: true,
+          handler() {
+              document.title = 'Workspace';
+          }
+      },
   },
   components: {
     FilePond

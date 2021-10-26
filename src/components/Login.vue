@@ -247,7 +247,15 @@ export default {
                 })
             }
         }
-    }
+    },
+    watch: {
+      $route: {
+          immediate: true,
+          handler() {
+              document.title = 'Login';
+          }
+      },
+  },
 }
 </script>
 
