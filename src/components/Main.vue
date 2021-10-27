@@ -2,7 +2,7 @@
   <div id="app">
     <v-app>
       <v-app-bar color="primary" app clipped-left class="elevation-1">
-        <v-toolbar-title style="color:white;" >My Files</v-toolbar-title>
+        <v-toolbar-title style="color:white;" >Archivos</v-toolbar-title>
         <v-spacer></v-spacer>  
     <v-row style="max-width:100px;" >
       <v-menu
@@ -27,7 +27,7 @@
             </v-avatar>
           </v-btn>
         </template>
-        <v-card style="width:250px;">
+        <v-card style="width:300px;">
           <v-list-item-content class="justify-center">
             <div class="mx-auto text-center">
               <v-avatar
@@ -58,7 +58,8 @@
                 {{ user.percetUsed | formatUsed}}
               </v-progress-circular>
               <br/>
-              <span>Espacio usado</span>   
+              <div class="mt-2"></div>
+              <span>Espacio usado {{user.usedSpaceKb |formatSize}} de {{user.totalSpaceKb |formatSize}}</span>   
 
               <v-divider class="my-3"></v-divider>
               <v-btn
@@ -356,7 +357,7 @@
 
       <v-dialog
           v-model="dialogDeleteFile"
-          max-width="500px"
+          max-width="400px"
         >
           <v-card>
             <v-card-title>
@@ -443,14 +444,25 @@ Vue.filter('formatDate', function(value) {
 });
 
 Vue.filter('formatSize', function(value) {
-  if (value) {
-    return Math.round(value, 2) + " KB";  
+  if(value != undefined){
+    if (value >= 1024){
+      let sizeMb = value / 1024.0;
+      sizeMb = Math.round(sizeMb * 100)/100;
+
+      if (sizeMb >= 1024){
+        let sizeGB = sizeMb / 1024.0;
+        sizeGB = Math.round(sizeGB * 100)/100;
+        return sizeGB + " GB"
+      }
+      return sizeMb + " MB";
+    }
+    return Math.round(value, 2) + " KB";
   }
 });
 
 Vue.filter('formatUsed', function(value) {
-  if (value) {
-    return Math.round(value, 2) + " %";  
+  if(value != undefined){
+    return Math.round(value, 2) + " %";
   }
 });
 
@@ -479,10 +491,10 @@ export default {
           formData.append('level',0); 
           formData.append('icon','mdi-file'); 
           formData.append('type','FILE'); 
-
           axios.post("directory/upload", formData, {headers: {'Content-Type': 'multipart/form-data'}
           }).then(function(){
               $this.refreshCurrentDirectory();
+              $this.refreshUsedSpace();
           }).catch(function(err){
             console.log(err);
             $this.snackbar = true;
@@ -539,6 +551,16 @@ export default {
     }
   },
   methods: {
+    refreshUsedSpace: function(){
+      let $this = this;
+      axios.get("directory/usedSpace").then(function(response){
+        let data = response.data;
+        $this.user.usedSpaceKb =data.usedSpaceKb; 
+        $this.user.percetUsed = data.usedSpaceKb  / $this.user.totalSpaceKb;
+      }).catch(function(err){
+        console.log(err);
+      })
+    },
     openDialogRenameDirectory: function(file){
       this.selectedDirectory = file;
       this.dialogRenameDirectory = true;
@@ -585,6 +607,7 @@ export default {
         $this.selectedDirectoryToDelete = {};
         $this.waitingResponseDeleteFile = false;
         $this.dialogDeleteFile = false;
+        $this.refreshUsedSpace();
       }).catch(function(err){
         console.log(err);
         $this.snackbar = true;
@@ -619,12 +642,11 @@ export default {
     validateNewFile: function(item){
       let $this = this;
       return new Promise((resolve, reject) =>{
-        console.log("directory/exists?parentId="+$this.currentParentId+"&name="+item.filename)
-        axios.get("directory/exists?parentId="+$this.currentParentId+"&name="+item.filename).then(function(response){
+        axios.post("directory/exists", {"parentId": $this.currentParentId, "name":item.filename}).then(function(response){
           console.log(response);
           let data = response.data;
-          //$this.snackbar = true;
-          //$this.textSnackbar = item.filename + " - "+data.message;
+          $this.snackbar = true;
+          $this.textSnackbar = data.message;
           resolve(data.status);
         }).catch(function(err){
           console.log(err)
@@ -747,6 +769,8 @@ export default {
       }
       $this.files = data;
     })
+
+    this.refreshUsedSpace();
   },
   watch: {
       $route: {
