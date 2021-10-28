@@ -645,8 +645,10 @@ export default {
         axios.post("directory/exists", {"parentId": $this.currentParentId, "name":item.filename}).then(function(response){
           console.log(response);
           let data = response.data;
-          $this.snackbar = true;
-          $this.textSnackbar = data.message;
+          if(!data.status){
+            $this.snackbar = true;
+            $this.textSnackbar = data.message;
+          }
           resolve(data.status);
         }).catch(function(err){
           console.log(err)
